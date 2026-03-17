@@ -1,0 +1,83 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  name            String
+  age             Int?
+  gender          String?
+  profileImageUrl String?
+  sportPreference String?
+  typicalPace     String?
+  bio             String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organizedActivities Activity[]      @relation("Organizer")
+  participations      Participation[]
+  feedbackGiven       Feedback[]      @relation("FeedbackAuthor")
+  feedbackReceived    Feedback[]      @relation("FeedbackTarget")
+}
+
+model Activity {
+  id              String    @id @default(cuid())
+  title           String
+  sportType       String
+  distance        Float
+  pace            String?
+  startDateTime   DateTime
+  endDateTime     DateTime?
+  startLat        Float
+  startLng        Float
+  routeGeoJSON    String?
+  groupType       String
+  description     String?
+  maxParticipants Int?
+  locationName    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organizerId String
+  organizer   User   @relation("Organizer", fields: [organizerId], references: [id])
+
+  participations Participation[]
+  feedbacks      Feedback[]
+}
+
+model Participation {
+  id       String    @id @default(cuid())
+  status   String    @default("JOINED")
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, activityId])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  authorId   String
+  author     User     @relation("FeedbackAuthor", fields: [authorId], references: [id])
+  targetId   String
+  target     User     @relation("FeedbackTarget", fields: [targetId], references: [id])
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([authorId, targetId, activityId])
+}
